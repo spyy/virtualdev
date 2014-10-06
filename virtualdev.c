@@ -6,6 +6,7 @@
 #include <linux/device.h> // class_create, class_destroy
 #include <linux/fs.h>
 #include <linux/cdev.h>
+#include <linux/uaccess.h>
 
 MODULE_LICENSE("Dual BSD/GPL");
 
@@ -22,16 +23,34 @@ static dev_t my_dev;
 static char *param = PARAM(parametri);
 module_param(param, charp, S_IRUGO | S_IWUSR);
 
+
+#define BUFSIZE 256
+static char buf[BUFSIZE];
+
 static ssize_t my_read(struct file *filp, char __user *ubuff, size_t len, loff_t *offs)
 {
 	printk(KERN_ALERT "my_read\n");
-	return 0;
+	if(len > BUFSIZE) len = BUFSIZE;
+	if(!access_ok(VERIFY_WRITE, ubuff, len)) return -EFAULT;
+
+	int remaining = copy_to_user(ubuff, buf, len);
+	if(remaining) return -EFAULT;
+
+	*offs += len;
+	return len;
 }
 
 
 static ssize_t my_write(struct file *filp, const char __user *ubuff, size_t len, loff_t *offs)
 {
 	printk(KERN_ALERT "my_write\n");
+	if(len > BUFSIZE) return -EFAULT;
+	if(!access_ok(VERIFY_READ, ubuff, len)) return -EFAULT;
+
+	len = copy_from_user(buf, ubuff, len);
+
+	*offs += len;
+
 	return len;
 }
 
