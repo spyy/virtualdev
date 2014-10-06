@@ -1,3 +1,4 @@
+
 #include <linux/init.h>
 #include <linux/module.h>
 #include <linux/moduleparam.h>
@@ -68,6 +69,9 @@ static int virtualdev_init(void)
 	// 3 initialize device
 	cdev_init(&my_cdev, &my_fileops);
 	my_cdev.owner = THIS_MODULE;
+	// 4 add device
+	cdev_add(&my_cdev, my_dev, 1);
+
 
 
     return 0;
