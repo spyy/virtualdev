@@ -57,6 +57,7 @@ static struct file_operations my_fileops = {
 
 // laite
 static struct cdev my_cdev;
+static struct device *my_device;
 
 static int virtualdev_init(void)
 {
@@ -71,7 +72,8 @@ static int virtualdev_init(void)
 	my_cdev.owner = THIS_MODULE;
 	// 4 add device
 	cdev_add(&my_cdev, my_dev, 1);
-
+	// 5 create device
+	my_device = device_create(dev_class, NULL, my_dev, NULL, "my_virtual_dev");
 
 
     return 0;
@@ -80,9 +82,10 @@ static int virtualdev_init(void)
 static void virtualdev_exit(void)
 {
     printk(KERN_ALERT "virtualdev_exit \n");
-	class_destroy(dev_class);
-	unregister_chrdev_region(my_dev, 1);
+	device_destroy(dev_class, my_dev);
 	cdev_del(&my_cdev);
+	unregister_chrdev_region(my_dev, 1);
+	class_destroy(dev_class);
 }
 
 module_init(virtualdev_init);
