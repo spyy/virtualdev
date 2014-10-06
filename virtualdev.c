@@ -27,27 +27,47 @@ module_param(param, charp, S_IRUGO | S_IWUSR);
 #define BUFSIZE 256
 static char buf[BUFSIZE];
 
+static int read_index = 0;
+static int write_index = 0;
+
+
+
 static ssize_t my_read(struct file *filp, char __user *ubuff, size_t len, loff_t *offs)
 {
+	int available;
+	int remaining;
+
 	printk(KERN_ALERT "my_read\n");
+	
 	if(len > BUFSIZE) len = BUFSIZE;
 	if(!access_ok(VERIFY_WRITE, ubuff, len)) return -EFAULT;
 
-	int remaining = copy_to_user(ubuff, buf, len);
+	available = write_index - read_index;
+	if(available < 0){
+		available = BUFSIZE - read_index;
+		remaining = copy_to_user(ubuff, buf[read_index], available);
+		remaining = copy_to_user(ubuff[tmp_len], buf[0], write_index);
+		available += write_index;
+	}
+	else {
+		remaining = copy_to_user(ubuff, buf[read_index], available);
+	}
+
 	if(remaining) return -EFAULT;
 
-	*offs += len;
-	return len;
+	*offs += available;
+	return available;
 }
 
 
 static ssize_t my_write(struct file *filp, const char __user *ubuff, size_t len, loff_t *offs)
 {
 	printk(KERN_ALERT "my_write\n");
-	if(len > BUFSIZE) return -EFAULT;
+	
+	if(len > BUFSIZE) len = BUFSIZE;
 	if(!access_ok(VERIFY_READ, ubuff, len)) return -EFAULT;
 
-	len = copy_from_user(buf, ubuff, len);
+	len = copy_from_user(buf[write_index], ubuff, len);
 
 	*offs += len;
 
