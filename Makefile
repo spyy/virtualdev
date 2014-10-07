@@ -2,6 +2,7 @@
 # kernel build system and can use its language.
 ifneq ($(KERNELRELEASE),)
 	obj-m := virtualdev.o 
+	ccflags-y := -Wno-declaration-after-statement
 
 # Otherwise we were called directly from the command
 # line; invoke the kernel build system.
